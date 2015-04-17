@@ -7,7 +7,7 @@
 #include <time.h>
 
 
-Chip8::Chip8() : m_opcode(0),m_pc(0x200),m_index(0),m_sp(0)
+Chip8::Chip8() : m_opcode(0),m_pc(0x200),m_index(0),m_sp(0),m_soundTimer(0),m_delayTimer(0)
 {
 	const uint8_t fontset[80] =
 	{ 
@@ -29,6 +29,13 @@ Chip8::Chip8() : m_opcode(0),m_pc(0x200),m_index(0),m_sp(0)
 	  0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 	};
 	
+	//set the screen to 0
+	std::memset(m_gfx, 0, sizeof(m_gfx));
+	//set the memory to 0
+	std::memset(m_memory, 0, sizeof(m_memory));
+	//set all registers to 0
+	std::memset(m_reg, 0, sizeof(m_reg));
+	//copy the fontset into memory
 	std::copy(fontset,fontset+80,&m_memory[0]);
 	srand (time(NULL));
 }
@@ -61,15 +68,16 @@ void Chip8::EmulateCycle()
 			{
 				case 0x0000: // 0x00E0: Clears the screen
 					memset(m_gfx,0,sizeof(m_gfx));
-					m_drawFlag = true;
-					m_pc += 2;
+					m_drawFlag = true;				
 					break;
 				case 0x000E: // 0x00EE: Returns from subroutine
 					--m_sp;			
 					m_pc = m_stack[m_sp];				
-					m_pc += 2;
-				break;					
+					break;
+				default:
+					printf("Unknown opcode [0x0000]: 0x%X\n", m_opcode);
 			}
+			m_pc += 2;
 			break;
 		case 0x1000://0x1NNN: Jump to adress NNN
 			m_pc= m_opcode & 0x0FFF;
@@ -242,7 +250,7 @@ void Chip8::EmulateCycle()
 						}
 					}
 
-					// If we didn't received a keypress, skip this cycle and try again.
+					//If we didn't received a keypress, skip this cycle and try again.
 					if(!keyPress)						
 						return;
 
@@ -296,12 +304,12 @@ void Chip8::EmulateCycle()
 	if(m_delayTimer>0)
 		--m_delayTimer;
 		
-	if(m_soundTimer>0)
-		if(m_soundTimer==1)
-		{
-			printf ("BEEP!\n");
-			--m_soundTimer;
-		}
+	if (m_soundTimer > 0)
+	{
+		if (m_soundTimer == 1)
+			printf("BEEP!\a\n");
+		--m_soundTimer;
+	}
 }
 
 bool Chip8::Draw()
@@ -313,6 +321,57 @@ bool Chip8::Draw()
 	}
 	return false;
 	
+}
+
+void Chip8::HandleKey(sf::Event::KeyEvent & key)
+{
+	switch (key.code)
+	{
+	case sf::Keyboard::Num1:
+	case sf::Keyboard::Num2:
+	case sf::Keyboard::Num3:
+	case sf::Keyboard::Num4:
+		m_key[key.code - 27] = 1;
+		break;
+	case sf::Keyboard::Q:
+		m_key[4] = 1;
+		break;
+	case sf::Keyboard::W:
+		m_key[5] = 1;
+		break;
+	case sf::Keyboard::E:
+		m_key[6] = 1;
+		break;
+	case sf::Keyboard::R:
+		m_key[7] = 1;
+		break;
+	case sf::Keyboard::A:
+		m_key[8] = 1;
+		break;
+	case sf::Keyboard::S:
+		m_key[9] = 1;
+		break;
+	case sf::Keyboard::D:
+		m_key[10] = 1;
+		break;
+	case sf::Keyboard::F:
+		m_key[11] = 1;
+		break;
+	case sf::Keyboard::Y:
+		m_key[12] = 1;
+		break;
+	case sf::Keyboard::X:
+		m_key[13] = 1;
+		break;
+	case sf::Keyboard::C:
+		m_key[14] = 1;
+		break;
+	case sf::Keyboard::V:
+		m_key[15] = 1;
+		break;
+	default:
+		break;
+	}
 }
 
 

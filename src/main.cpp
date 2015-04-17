@@ -3,18 +3,23 @@
 #include <iostream>
 #include "Chip8.hpp"
 
-int main(int argc,char** argv)
+int main(int argc,char* argv[])
 {
-	const std::string romname = "PONG";
-	sf::RenderWindow win(sf::VideoMode(256,128),"Chip-8",sf::Style::Default);
-	sf::Texture tex;
-	tex.create(64,32);
+	const std::string romname = "PONG2";
+	
 	Chip8 emu;
-	if(!emu.LoadROM(romname))
+	if (!emu.LoadROM(romname))
+	{
 		std::cout << "Failed to load ROM named: " << romname << std::endl;
+		return -1;
+	}
 	else
 		std::cout << "Loaded ROM: " << romname << std::endl; 
 		
+
+	sf::RenderWindow win(sf::VideoMode(640, 320), "Chip-8", sf::Style::Default);
+	sf::Texture tex;
+	tex.create(64, 32);
 	win.setFramerateLimit(60);
 	while(win.isOpen())
 	{
@@ -28,12 +33,15 @@ int main(int argc,char** argv)
 				win.close();
 				break;
 			case sf::Event::KeyPressed:
+				emu.HandleKey(event.key);
 				break;
 			default:
 				break;
 			}
 		}
+
 		emu.EmulateCycle();
+		
 		if(emu.Draw())
 		{
 			win.clear();
@@ -49,7 +57,7 @@ int main(int argc,char** argv)
 						
 			tex.update(img);
 			sf::Sprite spr(tex);
-			spr.scale(4.0f,4.0f);
+			spr.scale(10.0f,10.0f);
 			win.draw(spr);
 			win.display();
 		}
