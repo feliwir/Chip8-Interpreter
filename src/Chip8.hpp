@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string>
 #include <SFML/Window.hpp>
+#include <SFML/Audio.hpp>
 
 class Chip8
 {
@@ -29,6 +30,8 @@ class Chip8
 		uint16_t m_stack[16];
 		uint16_t m_sp;
 		uint8_t m_key[16];
-	
+
+		sf::SoundBuffer m_soundwave;
+		sf::Sound m_beep;
 		bool m_drawFlag;
 };

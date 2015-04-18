@@ -38,9 +38,7 @@ int main(int argc,char* argv[])
 			default:
 				break;
 			}
-		}
-
-		emu.EmulateCycle();
+		}	
 		
 		if(emu.Draw())
 		{
@@ -61,6 +59,8 @@ int main(int argc,char* argv[])
 			win.draw(spr);
 			win.display();
 		}
+		emu.EmulateCycle();
+
 		
 	}
 	

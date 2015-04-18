@@ -5,7 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 Chip8::Chip8() : m_opcode(0),m_pc(0x200),m_index(0),m_sp(0),m_soundTimer(0),m_delayTimer(0)
 {
@@ -35,9 +36,27 @@ Chip8::Chip8() : m_opcode(0),m_pc(0x200),m_index(0),m_sp(0),m_soundTimer(0),m_de
 	std::memset(m_memory, 0, sizeof(m_memory));
 	//set all registers to 0
 	std::memset(m_reg, 0, sizeof(m_reg));
+	//set all keys to 0
+	std::memset(m_key, 0, sizeof(m_key));
+
 	//copy the fontset into memory
 	std::copy(fontset,fontset+80,&m_memory[0]);
 	srand (time(NULL));
+
+	//create our beep sound
+	float freq = 440.f;
+	float seconds = 0.05f;
+	uint32_t sample_rate = 22050;
+	uint32_t buf_size = seconds * sample_rate;
+
+	int16_t* soundwave = new int16_t[buf_size];
+	for (int i = 0; i<buf_size; ++i) 
+	{
+		soundwave[i] = 32760 * sin((2.f*float(M_PI)*freq) / sample_rate * i);
+	}
+
+	m_soundwave.loadFromSamples(soundwave, buf_size, 1, sample_rate);
+	m_beep.setBuffer(m_soundwave);
 }
 
 
@@ -60,7 +79,6 @@ bool Chip8::LoadROM(const std::string& name)
 void Chip8::EmulateCycle()
 {
 	m_opcode = m_memory[m_pc] << 8 | m_memory[m_pc + 1];
-	printf ("Current opcode: 0x%X\n", m_opcode);
 	switch(m_opcode & 0xF000)
 	{
 		case 0x0000:
@@ -307,7 +325,8 @@ void Chip8::EmulateCycle()
 	if (m_soundTimer > 0)
 	{
 		if (m_soundTimer == 1)
-			printf("BEEP!\a\n");
+			m_beep.play();
+
 		--m_soundTimer;
 	}
 }
