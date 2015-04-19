@@ -118,7 +118,7 @@ void Chip8::EmulateCycle()
 				m_pc+=2;
 			break;
 		case 0x5000://0x5VY0: Skip next instruction if reg V quals reg Y
-			if(m_reg[(0x0F00&m_opcode)>>8]==(m_reg[(0x00F0&m_opcode)>>4]))
+			if(m_reg[(m_opcode&0x0F00)>>8]==(m_reg[(m_opcode&0x00F0)>>4]))
 				m_pc+=4;
 			else
 				m_pc+=2;
@@ -136,15 +136,19 @@ void Chip8::EmulateCycle()
 			{
 				case 0x0000://0x8XY0: set reg X to Y
 					m_reg[(m_opcode & 0x0F00)>>8] =  m_reg[(m_opcode&0x00F0)>>4];
+					m_pc += 2;
 					break;
 				case 0x0001://0x8XY1: set reg X to X OR Y
 					m_reg[(m_opcode & 0x0F00)>>8] |= m_reg[(m_opcode&0x00F0)>>4];
+					m_pc += 2;
 					break;
 				case 0x0002://0x8XY2: set reg X to X AND Y
 					m_reg[(m_opcode & 0x0F00)>>8] &= m_reg[(m_opcode&0x00F0)>>4];
+					m_pc += 2;
 					break;
 				case 0x0003://0x8XY3: set reg X to X XOR Y
 					m_reg[(m_opcode & 0x0F00)>>8] ^= m_reg[(m_opcode&0x00F0)>>4];
+					m_pc += 2;
 					break;
 				case 0x0004://0x8XY4: Adds reg Y to reg X. reg F is set to 1 when there's a carry, and to 0 when there isn't					
 					if(m_reg[(m_opcode & 0x00F0) >> 4] > (0xFF - m_reg[(m_opcode & 0x0F00) >> 8])) 
@@ -260,13 +264,11 @@ void Chip8::EmulateCycle()
 					bool keyPress = false;
 
 					for(uint8_t i = 0; i < 16; ++i)
-					{
 						if(m_key[i] != 0)
 						{
 							m_reg[(m_opcode & 0x0F00) >> 8] = i;
 							keyPress = true;
 						}
-					}
 
 					//If we didn't received a keypress, skip this cycle and try again.
 					if(!keyPress)						
