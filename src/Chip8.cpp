@@ -67,6 +67,7 @@ Chip8::Chip8() : m_opcode(0),m_pc(0x200),m_index(0),m_sp(0),m_soundTimer(0),m_de
 	m_cycleInterval =  std::chrono::microseconds((int)((1.0f / m_freq)*1000000));
 
 	glGenTextures(1, &m_tex);
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_tex);
 
 	m_program = glCreateProgram();
@@ -81,7 +82,7 @@ Chip8::Chip8() : m_opcode(0),m_pc(0x200),m_index(0),m_sp(0),m_soundTimer(0),m_de
 	{
 		char buffer[512];
 		glGetShaderInfoLog(m_vs_id, 512, NULL, buffer);
-		printf(buffer);
+		printf("%s",buffer);
 	}
 
 	glShaderSource(m_fs_id, 1, &m_fs, NULL);
@@ -92,17 +93,36 @@ Chip8::Chip8() : m_opcode(0),m_pc(0x200),m_index(0),m_sp(0),m_soundTimer(0),m_de
 	{
 		char buffer[512];
 		glGetShaderInfoLog(m_fs_id, 512, NULL, buffer);
-		printf(buffer);
+		printf("%s",buffer);
 	}
 
 
 	glAttachShader(m_program, m_vs_id);
 	glAttachShader(m_program, m_fs_id);
 	glLinkProgram(m_program);
+	
+	glGetProgramiv(m_program, GL_LINK_STATUS, &status);
+	if(status != GL_TRUE)
+	{
+		char buffer[512];
+		glGetProgramInfoLog(m_program, 512, NULL, buffer);
+		printf("%s",buffer);
+	}
  
 	glGenVertexArrays(1, &m_vao);
 	glBindVertexArray(m_vao);
 	glEnable(GL_TEXTURE0);
+	
+	glUseProgram(m_program);
+	
+		
+	GLint texLoc = glGetUniformLocation(m_program, "sampler");
+	printf("%i",texLoc);
+	glUniform1i(texLoc , 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	
+	glViewport(0,0,640,320);
 }
 
 
@@ -126,6 +146,8 @@ void Chip8::EmulateCycle()
 {
 	m_opcode = m_memory[m_pc] << 8 | m_memory[m_pc + 1];
 	printf("Current opcode: 0x%X\n", m_opcode);
+	glBindTexture(GL_TEXTURE_2D, m_tex);
+	
 	
 	switch(m_opcode & 0xF000)
 	{
@@ -372,10 +394,10 @@ void Chip8::EmulateCycle()
 	if (Draw())
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 64, 32, 0, GL_RED, GL_UNSIGNED_BYTE, m_gfx);
-		
+		printf("Updated image!\n");
 	}
 
-	glDrawArrays(GL_QUADS, 0, 4);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	if(m_delayTimer>0)
 		--m_delayTimer;
@@ -393,9 +415,9 @@ void Chip8::EmulateCycle()
 	auto fill_time = m_cycleInterval - (current - m_last);
 	
 	if (fill_time > std::chrono::microseconds(0))
+	{
 		std::this_thread::sleep_for(fill_time);
-	else
-		int a = 0;
+	}
 
 	m_last = current;
 }

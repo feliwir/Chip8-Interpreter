@@ -13,21 +13,25 @@ class Chip8
 	private:
 		const GLchar* m_vs =
 			"#version 330\n"
-			"vec2 coords[4] = vec2[4]((0.0,0.0),(0.0,1.0),(1.0,0.0),(1.0,1.0));"
-			"out vec2 outCoord;"
-			"void main(void){"
-			"outCoord = coords[gl_VertexID];\n"
-			"gl_Position = vec4(coords[gl_VertexID],0,1);"
+			"const vec2 pos[4] = vec2[4](vec2(-1.0,1.0),vec2(-1.0,-1.0),\n"
+			"							 vec2(1.0,1.0) ,vec2(1.0,-1.0));\n"
+			"const vec2 tex[4] = vec2[4](vec2(0.0,0.0),vec2(0.0,1.0),\n"
+			"							 vec2(1.0,0.0),vec2(1.0,1.0));\n"
+			"out vec2 outCoord;\n"
+			"void main(void){\n"
+			"outCoord = tex[gl_VertexID];\n"
+			"gl_Position = vec4(pos[gl_VertexID],0,1);\n"
 			"}";
 
 		const GLchar* m_fs =
 			"#version 330\n"
-			"uniform sampler2D sampler;"
-			"in vec2 coord;"
-			"out vec4 color;"
-			"void main(void){"
-			"color = texture(sampler, coord);"
-			"}";
+			"uniform sampler2D sampler;\n"
+			"in vec2 coord;\n"
+			"out vec4 color;\n"
+			"void main(void){\n"
+			"vec3 tmp = vec3(texture(sampler, coord)).rrr*255;\n"
+			"color = vec4(tmp,1.0);\n"
+			"}\n";
 
 	public:
 		Chip8();

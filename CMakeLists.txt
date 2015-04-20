@@ -79,6 +79,13 @@ message(STATUS "SFML libraries: ${SFML_LIBRARIES}")
 message(STATUS "Additional dependencies: ${SFML_DEPENDENCIES}")
 
 #################################################################################################################
+# ============================================== OpenGL SETUP ================================================= #
+#################################################################################################################
+find_package (GL REQUIRED)
+message(STATUS "OpenGL libraries: ${OPENGL_LIBRARIES}")
+message(STATUS "OpenGL include dir: ${OPENGL_INCLUDE_DIR_GL}")
+
+#################################################################################################################
 # ================================================= EMU SETUP ================================================= #
 #################################################################################################################
 
@@ -100,9 +107,9 @@ if (BUILD_STATIC)
     set_target_properties(${EMU} PROPERTIES
         COMPILE_DEFINITIONS SFML_STATIC)		
 		
-	target_link_libraries(${EMU} PRIVATE ${SFML_LIBRARIES} ${SFML_DEPENDENCIES})
+	target_link_libraries(${EMU} PRIVATE ${SFML_LIBRARIES} ${SFML_DEPENDENCIES} ${OPENGL_LIBRARIES})
 else()
-	target_link_libraries(${EMU} PRIVATE ${SFML_LIBRARIES})
+	target_link_libraries(${EMU} PRIVATE ${SFML_LIBRARIES}  -ldl ${OPENGL_LIBRARIES})
 endif()
 
 include (${CMAKE_SOURCE_DIR}/cmake/Install.cmake)

@@ -7,7 +7,7 @@ int main(int argc,char* argv[])
 {
 	const std::string romname = "PONG2";
 	
-	sf::RenderWindow win(sf::VideoMode(64, 32, 8), "Chip-8", sf::Style::Default, sf::ContextSettings(0, 0, 0, 3, 0));
+	sf::RenderWindow win(sf::VideoMode(640, 320, 8), "Chip-8", sf::Style::Default, sf::ContextSettings(0, 0, 0, 3, 0));
 
 	Chip8 emu;
 	if (!emu.LoadROM(romname))
