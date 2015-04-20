@@ -1,11 +1,34 @@
 #pragma once
 #include <stdint.h>
 #include <string>
+#include <chrono>
 #include <SFML/Window.hpp>
 #include <SFML/Audio.hpp>
+#include "flextGL.h"
+
+#define CPU_FREQ 60
 
 class Chip8
 {
+	private:
+		const GLchar* m_vs =
+			"#version 330\n"
+			"vec2 coords[4] = vec2[4]((0.0,0.0),(0.0,1.0),(1.0,0.0),(1.0,1.0));"
+			"out vec2 outCoord;"
+			"void main(void){"
+			"outCoord = coords[gl_VertexID];\n"
+			"gl_Position = vec4(coords[gl_VertexID],0,1);"
+			"}";
+
+		const GLchar* m_fs =
+			"#version 330\n"
+			"uniform sampler2D sampler;"
+			"in vec2 coord;"
+			"out vec4 color;"
+			"void main(void){"
+			"color = texture(sampler, coord);"
+			"}";
+
 	public:
 		Chip8();
 		void EmulateCycle();
@@ -31,7 +54,14 @@ class Chip8
 		uint16_t m_sp;
 		uint8_t m_key[16];
 
+		uint32_t m_freq;
+
+		std::chrono::time_point<std::chrono::high_resolution_clock> m_last;
+		std::chrono::microseconds m_cycleInterval;
 		sf::SoundBuffer m_soundwave;
 		sf::Sound m_beep;
+		GLuint m_tex;
+		GLuint m_program,m_vs_id,m_fs_id;
+		GLuint m_vao;
 		bool m_drawFlag;
 };

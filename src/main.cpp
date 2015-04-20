@@ -7,6 +7,8 @@ int main(int argc,char* argv[])
 {
 	const std::string romname = "PONG2";
 	
+	sf::RenderWindow win(sf::VideoMode(64, 32, 8), "Chip-8", sf::Style::Default, sf::ContextSettings(0, 0, 0, 3, 0));
+
 	Chip8 emu;
 	if (!emu.LoadROM(romname))
 	{
@@ -17,12 +19,12 @@ int main(int argc,char* argv[])
 		std::cout << "Loaded ROM: " << romname << std::endl; 
 		
 
-	sf::RenderWindow win(sf::VideoMode(640, 320), "Chip-8", sf::Style::Default);
+
 	sf::Texture tex;
 	tex.create(64, 32);
-	win.setFramerateLimit(60);
 	while(win.isOpen())
 	{
+		win.clear();
 		sf::Event event;
 	
 		while (win.pollEvent(event))
@@ -40,28 +42,8 @@ int main(int argc,char* argv[])
 			}
 		}	
 		
-		if(emu.Draw())
-		{
-			win.clear();
-			sf::Image img;
-			img.create(64,32);
-			
-			for(int y = 0; y < 32; ++y)		
-				for(int x = 0; x < 64; ++x)
-					if(emu.GetScreen()[(y * 64) + x] == 0)
-						img.setPixel(x,y,sf::Color(0,0,0));
-					else 
-						img.setPixel(x,y,sf::Color(255,255,255));
-						
-			tex.update(img);
-			sf::Sprite spr(tex);
-			spr.scale(10.0f,10.0f);
-			win.draw(spr);
-			win.display();
-		}
-		emu.EmulateCycle();
-
-		
+		emu.EmulateCycle();		
+		win.display();
 	}
 	
 	return 0;

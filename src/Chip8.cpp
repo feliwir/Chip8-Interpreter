@@ -7,9 +7,13 @@
 #include <time.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <thread>
+#include <string.h>
 
-Chip8::Chip8() : m_opcode(0),m_pc(0x200),m_index(0),m_sp(0),m_soundTimer(0),m_delayTimer(0)
+Chip8::Chip8() : m_opcode(0),m_pc(0x200),m_index(0),m_sp(0),m_soundTimer(0),m_delayTimer(0), m_freq(CPU_FREQ)
 {
+	flextInit();
+	GLint status;
 	const uint8_t fontset[80] =
 	{ 
 	  0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -57,6 +61,48 @@ Chip8::Chip8() : m_opcode(0),m_pc(0x200),m_index(0),m_sp(0),m_soundTimer(0),m_de
 
 	m_soundwave.loadFromSamples(soundwave, buf_size, 1, sample_rate);
 	m_beep.setBuffer(m_soundwave);
+
+
+	m_last = std::chrono::high_resolution_clock::now();
+	m_cycleInterval =  std::chrono::microseconds((int)((1.0f / m_freq)*1000000));
+
+	glGenTextures(1, &m_tex);
+	glBindTexture(GL_TEXTURE_2D, m_tex);
+
+	m_program = glCreateProgram();
+	m_vs_id = glCreateShader(GL_VERTEX_SHADER);
+	m_fs_id = glCreateShader(GL_FRAGMENT_SHADER);
+
+	glShaderSource(m_vs_id, 1, &m_vs, NULL);
+	glCompileShader(m_vs_id);
+	glGetShaderiv(m_vs_id, GL_COMPILE_STATUS, &status);
+
+	if (status != GL_TRUE)
+	{
+		char buffer[512];
+		glGetShaderInfoLog(m_vs_id, 512, NULL, buffer);
+		printf(buffer);
+	}
+
+	glShaderSource(m_fs_id, 1, &m_fs, NULL);
+	glCompileShader(m_fs_id);
+	glGetShaderiv(m_fs_id, GL_COMPILE_STATUS, &status);
+	
+	if (status != GL_TRUE)
+	{
+		char buffer[512];
+		glGetShaderInfoLog(m_fs_id, 512, NULL, buffer);
+		printf(buffer);
+	}
+
+
+	glAttachShader(m_program, m_vs_id);
+	glAttachShader(m_program, m_fs_id);
+	glLinkProgram(m_program);
+ 
+	glGenVertexArrays(1, &m_vao);
+	glBindVertexArray(m_vao);
+	glEnable(GL_TEXTURE0);
 }
 
 
@@ -79,6 +125,8 @@ bool Chip8::LoadROM(const std::string& name)
 void Chip8::EmulateCycle()
 {
 	m_opcode = m_memory[m_pc] << 8 | m_memory[m_pc + 1];
+	printf("Current opcode: 0x%X\n", m_opcode);
+	
 	switch(m_opcode & 0xF000)
 	{
 		case 0x0000:
@@ -321,6 +369,14 @@ void Chip8::EmulateCycle()
 			printf ("Unknown opcode: 0x%X\n", m_opcode);
 	}
 	
+	if (Draw())
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 64, 32, 0, GL_RED, GL_UNSIGNED_BYTE, m_gfx);
+		
+	}
+
+	glDrawArrays(GL_QUADS, 0, 4);
+
 	if(m_delayTimer>0)
 		--m_delayTimer;
 		
@@ -331,6 +387,17 @@ void Chip8::EmulateCycle()
 
 		--m_soundTimer;
 	}
+
+	//sleep
+	auto current = std::chrono::high_resolution_clock::now();
+	auto fill_time = m_cycleInterval - (current - m_last);
+	
+	if (fill_time > std::chrono::microseconds(0))
+		std::this_thread::sleep_for(fill_time);
+	else
+		int a = 0;
+
+	m_last = current;
 }
 
 bool Chip8::Draw()
