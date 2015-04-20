@@ -70,6 +70,10 @@ Chip8::Chip8() : m_opcode(0),m_pc(0x200),m_index(0),m_sp(0),m_soundTimer(0),m_de
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_tex);
 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
 	m_program = glCreateProgram();
 	m_vs_id = glCreateShader(GL_VERTEX_SHADER);
 	m_fs_id = glCreateShader(GL_FRAGMENT_SHADER);
@@ -111,7 +115,6 @@ Chip8::Chip8() : m_opcode(0),m_pc(0x200),m_index(0),m_sp(0),m_soundTimer(0),m_de
  
 	glGenVertexArrays(1, &m_vao);
 	glBindVertexArray(m_vao);
-	glEnable(GL_TEXTURE0);
 	
 	glUseProgram(m_program);
 	
@@ -119,8 +122,6 @@ Chip8::Chip8() : m_opcode(0),m_pc(0x200),m_index(0),m_sp(0),m_soundTimer(0),m_de
 	GLint texLoc = glGetUniformLocation(m_program, "sampler");
 	printf("%i",texLoc);
 	glUniform1i(texLoc , 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	
 	glViewport(0,0,640,320);
 }
@@ -144,11 +145,13 @@ bool Chip8::LoadROM(const std::string& name)
 
 void Chip8::EmulateCycle()
 {
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
 	m_opcode = m_memory[m_pc] << 8 | m_memory[m_pc + 1];
-	printf("Current opcode: 0x%X\n", m_opcode);
 	glBindTexture(GL_TEXTURE_2D, m_tex);
 	
-	
+	printf("Current opcode: 0x%X\n", m_opcode);
 	switch(m_opcode & 0xF000)
 	{
 		case 0x0000:
@@ -183,15 +186,15 @@ void Chip8::EmulateCycle()
 			break;
 		case 0x4000://0x4VNN: Skip next instruction if reg V doesn't equals NN
 			if(m_reg[(0x0F00&m_opcode)>>8]!=(m_opcode&0x00FF))
-				m_pc+=4;
-			else
 				m_pc+=2;
+
+			m_pc+=2;
 			break;
 		case 0x5000://0x5VY0: Skip next instruction if reg V quals reg Y
 			if(m_reg[(m_opcode&0x0F00)>>8]==(m_reg[(m_opcode&0x00F0)>>4]))
-				m_pc+=4;
-			else
 				m_pc+=2;
+			
+			m_pc+=2;
 			break;
 		case 0x6000://0x6VNN: Set the register V to NN
 			m_reg[(m_opcode&0x0F00)>>8]= m_opcode&0x00FF;
@@ -206,19 +209,15 @@ void Chip8::EmulateCycle()
 			{
 				case 0x0000://0x8XY0: set reg X to Y
 					m_reg[(m_opcode & 0x0F00)>>8] =  m_reg[(m_opcode&0x00F0)>>4];
-					m_pc += 2;
 					break;
 				case 0x0001://0x8XY1: set reg X to X OR Y
 					m_reg[(m_opcode & 0x0F00)>>8] |= m_reg[(m_opcode&0x00F0)>>4];
-					m_pc += 2;
 					break;
 				case 0x0002://0x8XY2: set reg X to X AND Y
 					m_reg[(m_opcode & 0x0F00)>>8] &= m_reg[(m_opcode&0x00F0)>>4];
-					m_pc += 2;
 					break;
 				case 0x0003://0x8XY3: set reg X to X XOR Y
 					m_reg[(m_opcode & 0x0F00)>>8] ^= m_reg[(m_opcode&0x00F0)>>4];
-					m_pc += 2;
 					break;
 				case 0x0004://0x8XY4: Adds reg Y to reg X. reg F is set to 1 when there's a carry, and to 0 when there isn't					
 					if(m_reg[(m_opcode & 0x00F0) >> 4] > (0xFF - m_reg[(m_opcode & 0x0F00) >> 8])) 
@@ -226,7 +225,6 @@ void Chip8::EmulateCycle()
 					else 
 						m_reg[0xF] = 0;					
 					m_reg[(m_opcode & 0x0F00) >> 8] += m_reg[(m_opcode & 0x00F0) >> 4];
-					m_pc += 2;
 					break;	
 				case 0x0005://0x8XY5: reg Y is subtracted from reg X. reg F is set to 0 when there's a borrow, and 1 when there isn't			
 					if(m_reg[(m_opcode & 0x00F0) >> 4] > m_reg[(m_opcode & 0x0F00) >> 8]) 
@@ -234,34 +232,32 @@ void Chip8::EmulateCycle()
 					else 
 						m_reg[0xF] = 1;					
 					m_reg[(m_opcode & 0x0F00) >> 8] -= m_reg[(m_opcode & 0x00F0) >> 4];
-					m_pc += 2;
 					break;
 				case 0x0006://0x8XY6: Shifts reg X right by one. reg F is set to the value of the least significant bit of reg X before the shift
 					m_reg[0xF] = m_reg[(m_opcode & 0x0F00) >> 8] & 0x1;
 					m_reg[(m_opcode & 0x0F00) >> 8] >>= 1;
-					m_pc += 2;
 					break;
 				case 0x0007://0x8XY7: Sets reg X to regY minus reg X. reg F is set to 0 when there's a borrow, and 1 when there isn't
 					if(m_reg[(m_opcode & 0x0F00) >> 8] > m_reg[(m_opcode & 0x00F0) >> 4])
 						m_reg[0xF] = 0;
 					else
 						m_reg[0xF] = 1;
-					m_reg[(m_opcode & 0x0F00) >> 8] = m_reg[(m_opcode & 0x00F0) >> 4] - m_reg[(m_opcode & 0x0F00) >> 8];				
-					m_pc += 2;
+					m_reg[(m_opcode & 0x0F00) >> 8] = m_reg[(m_opcode & 0x00F0) >> 4] - m_reg[(m_opcode & 0x0F00) >> 8];									
 					break;
 				case 0x000E://0x8XYE: Shifts reg X left by one. reg F is set to the value of the most significant bit of regX before the shift
 					m_reg[0xF] = m_reg[(m_opcode & 0x0F00) >> 8] >> 7;
 					m_reg[(m_opcode & 0x0F00) >> 8] <<= 1;
-					m_pc += 2;
 					break;
 				default:
 					printf ("Unknown opcode [0x8000]: 0x%X\n", m_opcode);
 			}
+			m_pc += 2;
+			break;
 		case 0x9000://0x9XY0: Skip next instruction if x doesn't equal y
 			if(m_reg[(0x0F00&m_opcode)>>8]!=m_reg[(0x00F0&m_opcode)>>4])
-				m_pc+=4;
-			else
 				m_pc+=2;
+
+			m_pc+=2;
 			break;
 		case 0xA000://0xANNN: Set index to NNN
 			m_index = m_opcode & 0x0FFF;
@@ -277,8 +273,8 @@ void Chip8::EmulateCycle()
 		case 0xD000:
 		{
 			uint16_t x = m_reg[(m_opcode & 0x0F00) >> 8];
-			uint16_t y = m_reg[(m_opcode & 0x00F0) >> 4];
-			uint16_t height = m_opcode & 0x000F;
+			uint16_t y = m_reg[(m_opcode & 0x00F0) >> 4] % 32;
+			uint16_t height = (m_opcode & 0x000F);
 			uint16_t pixel;
 
 			m_reg[0xF] = 0;
@@ -433,7 +429,7 @@ bool Chip8::Draw()
 	
 }
 
-void Chip8::HandleKey(sf::Event::KeyEvent & key)
+void Chip8::HandleKey(sf::Event::KeyEvent & key,bool state)
 {
 	switch (key.code)
 	{
@@ -441,43 +437,43 @@ void Chip8::HandleKey(sf::Event::KeyEvent & key)
 	case sf::Keyboard::Num2:
 	case sf::Keyboard::Num3:
 	case sf::Keyboard::Num4:
-		m_key[key.code - 27] = 1;
+		m_key[key.code - 27] = state;
 		break;
 	case sf::Keyboard::Q:
-		m_key[4] = 1;
+		m_key[4] = state;
 		break;
 	case sf::Keyboard::W:
-		m_key[5] = 1;
+		m_key[5] = state;
 		break;
 	case sf::Keyboard::E:
-		m_key[6] = 1;
+		m_key[6] = state;
 		break;
 	case sf::Keyboard::R:
-		m_key[7] = 1;
+		m_key[7] = state;
 		break;
 	case sf::Keyboard::A:
-		m_key[8] = 1;
+		m_key[8] = state;
 		break;
 	case sf::Keyboard::S:
-		m_key[9] = 1;
+		m_key[9] = state;
 		break;
 	case sf::Keyboard::D:
-		m_key[10] = 1;
+		m_key[10] = state;
 		break;
 	case sf::Keyboard::F:
-		m_key[11] = 1;
+		m_key[11] = state;
 		break;
 	case sf::Keyboard::Y:
-		m_key[12] = 1;
+		m_key[12] = state;
 		break;
 	case sf::Keyboard::X:
-		m_key[13] = 1;
+		m_key[13] = state;
 		break;
 	case sf::Keyboard::C:
-		m_key[14] = 1;
+		m_key[14] = state;
 		break;
 	case sf::Keyboard::V:
-		m_key[15] = 1;
+		m_key[15] = state;
 		break;
 	default:
 		break;

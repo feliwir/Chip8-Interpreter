@@ -26,10 +26,10 @@ class Chip8
 		const GLchar* m_fs =
 			"#version 330\n"
 			"uniform sampler2D sampler;\n"
-			"in vec2 coord;\n"
+			"in vec2 outCoord;\n"
 			"out vec4 color;\n"
 			"void main(void){\n"
-			"vec3 tmp = vec3(texture(sampler, coord)).rrr*255;\n"
+			"vec3 tmp = vec3(texture(sampler, outCoord)).rrr*255;\n"
 			"color = vec4(tmp,1.0);\n"
 			"}\n";
 
@@ -38,7 +38,7 @@ class Chip8
 		void EmulateCycle();
 		bool LoadROM(const std::string& name);
 		bool Draw();
-		void HandleKey(sf::Event::KeyEvent& key);
+		void HandleKey(sf::Event::KeyEvent& key,bool state);
 
 		inline uint8_t* GetScreen()
 		{

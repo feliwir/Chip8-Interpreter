@@ -7,7 +7,7 @@ int main(int argc,char* argv[])
 {
 	const std::string romname = "PONG2";
 	
-	sf::RenderWindow win(sf::VideoMode(640, 320, 8), "Chip-8", sf::Style::Default, sf::ContextSettings(0, 0, 0, 3, 0));
+	sf::Window win(sf::VideoMode(640, 320, 8), "Chip-8", sf::Style::Default, sf::ContextSettings(0, 0, 0, 3, 0));
 
 	Chip8 emu;
 	if (!emu.LoadROM(romname))
@@ -24,7 +24,7 @@ int main(int argc,char* argv[])
 	tex.create(64, 32);
 	while(win.isOpen())
 	{
-		win.clear();
+		
 		sf::Event event;
 	
 		while (win.pollEvent(event))
@@ -35,7 +35,10 @@ int main(int argc,char* argv[])
 				win.close();
 				break;
 			case sf::Event::KeyPressed:
-				emu.HandleKey(event.key);
+				emu.HandleKey(event.key,true);
+				break;
+			case sf::Event::KeyReleased:
+				emu.HandleKey(event.key,false);
 				break;
 			default:
 				break;

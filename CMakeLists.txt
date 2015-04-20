@@ -74,7 +74,7 @@ if (BUILD_STATIC)
     set (SFML_STATIC_LIBRARIES TRUE)
 endif()
 
-find_package (SFML 2 COMPONENTS graphics window system audio REQUIRED)
+find_package (SFML 2 COMPONENTS graphics window system audio main REQUIRED)
 message(STATUS "SFML libraries: ${SFML_LIBRARIES}")
 message(STATUS "Additional dependencies: ${SFML_DEPENDENCIES}")
 
@@ -96,11 +96,16 @@ include_directories (${EMU_INCLUDE_DIRS})
 
 source_group(Source FILES ${SRC_FILES})
 
-if(MSVC)
-	add_definitions(-D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS /D_CRT_SECURE_NO_WARNINGS /wd4099 /wd4098 /wd4458 /nologo)
-endif()
 
 add_executable(${EMU} ${SRC_FILES})
+
+if(MSVC)
+	add_definitions(-D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS /D_CRT_SECURE_NO_WARNINGS /wd4099 /wd4098 /wd4458 /nologo)
+	 set_target_properties(${EMU} PROPERTIES  LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
+endif()
+
+
+
 
 # Define the libraries game should link against
 if (BUILD_STATIC)
